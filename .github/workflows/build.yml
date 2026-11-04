@@ -14,6 +14,10 @@ jobs:
   build:
     name: Build & package
     runs-on: windows-latest
+    env:
+      # Windows 运行器默认代码页不是 UTF-8，源码与日志含中文，统一指定
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

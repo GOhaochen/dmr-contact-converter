@@ -34,6 +34,14 @@ def load_module():
 
 
 def main():
+    # Windows 上 stdout 默认是 cp1252/cp936，打印中文会抛 UnicodeEncodeError，
+    # 故先统一切到 UTF-8（GitHub Actions 的 Windows 运行器实测会踩这个坑）。
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     module = load_module()
 
     print("模块加载与常量：")
