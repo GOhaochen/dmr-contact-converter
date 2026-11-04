@@ -1,0 +1,62 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & package
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+
+      - name: Smoke test
+        run: python tests/test_convert.py
+
+      - name: Build single-file EXE
+        run: pyinstaller --onefile --clean --noconfirm --name "6900DMR-Contact-Tool" dmr_contact_converter.py
+
+      - name: Show build output
+        run: Get-ChildItem dist
+
+      # 每次构建都留一份可下载的产物
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 6900DMR-Contact-Tool-windows-x64
+          path: dist/6900DMR-Contact-Tool.exe
+          if-no-files-found: error
+
+      # 推 v* 标签时自动创建 Release 并附上 exe
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/6900DMR-Contact-Tool.exe
+          generate_release_notes: true
+          body: |
+            如意通 6900DMR 联系人 CSV 转换工具。
+
+            **用法**：解压后双击 `6900DMR-Contact-Tool.exe`。
+            把 RadioID 下载的 `user.csv` 放在同一目录，或直接拖到 exe 图标上。
+            转换结果 `china_dmr_ids_final.csv` 生成在 `user.csv` 所在目录，可直接由写频软件导入。
+
+            数据来源：https://radioid.net
